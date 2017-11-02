@@ -39,3 +39,6 @@ const packet = new EEPPacket(buffer);
     crc8d: String
 }
   ```
+## Changes
+### 0.0.2
+Path fixed for eep.json

@@ -1,10 +1,11 @@
 const fs = require('fs');
+const path = require('path');
 
 const Helper = require('./helper');
 const Profiles = require('./profiles');
 
 module.exports = function(data) {
-    const EEPMapper = JSON.parse(fs.readFileSync('./eep/eep.json', 'utf8')); // FS Bug? Always from root dir
+    const EEPMapper = JSON.parse(fs.readFileSync(path.join(__dirname, 'eep.json'), 'utf8')); // FS Bug? Always from root dir
 
     if (data.rorg === 'f6') {
         //const t21 = parseInt(data.status, 16) << 26 >>> 31;

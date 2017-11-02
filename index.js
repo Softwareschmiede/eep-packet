@@ -1,4 +1,6 @@
 const fs = require('fs');
+const path = require('path');
+
 const EEP = require('./eep/eep');
 
 class EEPPacket {
@@ -39,12 +41,12 @@ class EEPPacket {
 
         const eep = EEP(data);
         if (eep.learnMode) {
-            const eepMapper = JSON.parse(fs.readFileSync('./eep/eep.json', 'utf8'));
+            const eepMapper = JSON.parse(fs.readFileSync(path.join(__dirname, '/eep/eep.json'), 'utf8'));
 
             if (!eepMapper.hasOwnProperty(data.senderId)) {
                 eepMapper[data.senderId] = eep.eep;
 
-                fs.writeFileSync('./eep/eep.json', JSON.stringify(eepMapper));
+                fs.writeFileSync(path.join(__dirname, '/eep/eep.json'), JSON.stringify(eepMapper));
             }
         } else {
             data.userData = eep;
