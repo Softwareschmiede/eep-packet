@@ -1,0 +1,26 @@
+{
+  "name": "eep-packet",
+  "version": "0.0.1",
+  "description": "Parses an EnOcean Serial Protocol 3 buffer to an EEP packet.",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha ./test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Softwareschmiede/eep-packet.git"
+  },
+  "keywords": [
+    "ESP",
+    "EEP",
+    "EnOcean",
+    "Equipment",
+    "Profile"
+  ],
+  "author": "David Spanier",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Softwareschmiede/eep-packet/issues"
+  },
+  "homepage": "https://github.com/Softwareschmiede/eep-packet#readme"
+}
