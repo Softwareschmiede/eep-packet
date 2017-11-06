@@ -1,83 +1,80 @@
 const fs = require('fs');
-const path = require('path');
+const ESP3Packet = require('esp3-packet');
 
-const EEP = require('./eep/eep');
+const Helper = require('./helper');
+const EEPs = require('./eep');
 
 class EEPPacket {
-    constructor(buffer) {
+    constructor(buffer, knownDevicesFilePath) {
         if (buffer === undefined || buffer === null) {
-            throw new TypeError('Buffer is missing.');
+            throw new Error('Buffer is missing.');
         }
 
-        const dataOffset = 6;
+        const kdfp = (knownDevicesFilePath === undefined || knownDevicesFilePath === null) ? __dirname + '/known-devices.json' : knownDevicesFilePath;
+        console.log(kdfp);
+        const KnownDevices = require(kdfp);
 
-        const raw = buffer;
+        const espPacket = new ESP3Packet(buffer);
 
-        // Sync Byte - Every ESP3 packet starts with 55
-        const syncByte = raw.toString('hex', 0, 1); // Size = 1 Byte
+        // RPS
+        if (espPacket.data.rorg === 'f6') {
+            espPacket.data.userData = EEPs['f60203'](espPacket.data.rawUserData);
+            delete espPacket.data.rawUserData;
 
-        const rawHeader = raw.slice(1, 5); // Header size = 4
+            return espPacket;
+        }
 
-        const header = {
-            dataLength: rawHeader.readUInt16BE(0), // Size = 2 bytes
-            optionalLength: rawHeader.readUInt8(2), // Size = 1 byte
-            packetType: rawHeader.toString('hex', 3, 4) // Size = 1 byte
-        };
+        // 1BS
+        if (espPacket.data.rorg === 'd5') { // At this moment there is only one eep
+            const learnMode = espPacket.data.rawUserData.readUInt8() << 28 >>> 31; // Offset = 4, size = 1
 
-        const crc8h = raw.toString('hex', 5, 6); // Size = 1 byte
+            if (learnMode === 0) { // it's a learn packet
+                KnownDevices[espPacket.data.senderId] = { rorg: espPacket.data.rorg, func: '00', type: '01' };
 
-        //if (parseInt(crc8h, 16) !== crc8(rawHeader)) {
-        //    return;
-        //}
+                fs.writeFileSync(kdfp, JSON.stringify(KnownDevices));
+                delete espPacket.data.rawUserData;
 
-        const rawData = raw.slice(dataOffset, dataOffset + header.dataLength); // Keep buffer reference
+                return espPacket;
+            } else {
+                if (KnownDevices.hasOwnProperty(espPacket.data.senderId)) { // It's a known device, so parse it
+                    const eep = KnownDevices[espPacket.data.senderId];
+                    espPacket.data.userData = EEPs[eep.rorg + eep.func + eep.type](espPacket.data.rawUserData);
 
-        const data = {
-            rorg: rawData.toString('hex', 0, 1), // Size = 1 byte
-            rawUserData: rawData.slice(1, header.dataLength - 5), // Variable length, but sender id and status have fixed sizes
-            senderId: rawData.toString('hex', header.dataLength - 5, header.dataLength - 1), // Size = 4 bytes
-            status: rawData.toString('hex', header.dataLength - 1, header.dataLength) // Size = 1 byte
-        };
-
-        const eep = EEP(data);
-        if (eep.learnMode) {
-            const eepMapper = JSON.parse(fs.readFileSync(path.join(__dirname, '/eep/eep.json'), 'utf8'));
-
-            if (!eepMapper.hasOwnProperty(data.senderId)) {
-                eepMapper[data.senderId] = eep.eep;
-
-                fs.writeFileSync(path.join(__dirname, '/eep/eep.json'), JSON.stringify(eepMapper));
+                    delete espPacket.data.rawUserData;
+                    return espPacket;
+                } else { // Device isn't known, so cannot parse
+                    delete espPacket.data.rawUserData;
+                    return espPacket;
+                }
             }
-        } else {
-            data.userData = eep;
         }
 
-        const rawOptionalData = raw.slice(dataOffset + header.dataLength, dataOffset + header.dataLength + header.optionalLength); // Keep buffer reference
+        // 4BS
+        if (espPacket.data.rorg === 'a5') {
+            const learnMode = espPacket.data.rawUserData.readUInt8(3) << 28 >>> 31;
 
-        const optionalData = {
-            subTelNum: rawOptionalData.readUInt8(0), // Size = 1 byte
-            destinationId: rawOptionalData.toString('hex', 1, 5), // Size = 4 bytes
-            dBm: rawOptionalData.readUInt8(5), // Size = 1 byte
-            securityLevel: rawOptionalData.readUInt8(6) // Size = 1 byte
-        };
+            if (learnMode === 0) { // it's a learn packet
+                const func = Helper.pad(espPacket.data.rawUserData.readUInt8() >>> 2);
+                const type = Helper.pad(espPacket.data.rawUserData.readUInt16BE() << 22 >>> 25);
 
-        const crc8d = raw.toString('hex', dataOffset + header.dataLength + header.optionalLength, dataOffset + header.dataLength + header.optionalLength + 1); // Size = 1 byte
+                KnownDevices[espPacket.data.senderId] = { rorg: espPacket.data.rorg, func: func, type: type };
 
-        //if (parseInt(crc8d, 16) !== crc8(Buffer.concat([rawData, rawOptionalData]))) {
-        //    throw new Error('Buffer is missing.');
-        //}
+                fs.writeFileSync(kdfp, JSON.stringify(KnownDevices));
+                delete espPacket.data.rawUserData;
 
-        return {
-            raw: raw,
-            syncByte: syncByte,
-            rawHeader: rawHeader,
-            header: header,
-            crc8h: crc8h,
-            rawData: rawData,
-            data: data,
-            rawOptionalData: rawOptionalData,
-            optionalData: optionalData,
-            crc8d: crc8d
+                return espPacket;
+            } else {
+                if (KnownDevices.hasOwnProperty(espPacket.data.senderId)) { // It's a known device, so parse it
+                    const eep = KnownDevices[espPacket.data.senderId];
+                    espPacket.data.userData = EEPs[eep.rorg + eep.func](espPacket.data.rawUserData, eep);
+
+                    delete espPacket.data.rawUserData;
+                    return espPacket;
+                } else { // Device isn't known, so cannot parse
+                    delete espPacket.data.rawUserData;
+                    return espPacket;
+                }
+            }
         }
     }
 }

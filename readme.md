@@ -1,6 +1,8 @@
 # eep-packet
-This module parses vaild esp3 buffer to eep packets.
-It extracts all information out of the buffer.
+This module extracts all information out of an esp3 buffer.
+
+## Dependencies
+* ESP3Packet 0.0.5
 
 ## Usage
 ```javascript
@@ -9,36 +11,33 @@ const EEPPacket = require('eep-packet');
 const packet = new EEPPacket(buffer);
 ```
 
+## Option
+You can set a file path where all known devices will be stored.
+Default: "./known-devices.json"
+
+```javascript
+const packet = new EEPPacket(buffer, 'absolute/path/file.json');
+```
+
 ## Packet structure
 ```javascript
 {
-    raw: Buffer,
-    syncByte: '55',
-    rawHeader: Buffer,
     header: {
         dataLength: Number,
         optionalLength: Number,
         packetType: String
     },
-    crc8h: String,
-    rawData: Buffer,
     data: {
         rorg: String,
-        rawUserData: Buffer,
-        userData: Object
         senderId: String,
-        status: String
+        status: String,
+        userData: Object
     },
-    rawOptionalData: Buffer,
     optionalData: {
         subTelNum: Number,
         destinationId: String,
         dBm: Number,
         securityLevel: Number
-    },
-    crc8d: String
+    }
 }
   ```
-## Changes
-### 0.0.2
-Path fixed for eep.json

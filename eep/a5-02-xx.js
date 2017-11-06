@@ -1,11 +1,11 @@
-const Helper = require('./helper');
+const Helper = require('../helper');
 
 const sensors = {
     "01":{min:-40,max:0}, //1
     "02":{min:-30,max:10}, //2
     "03":{min:-20,max:20}, //3
     "04":{min:-10,max:30}, //4
-    "05":{min:-0,max:40}, //5
+    "05":{min:0,max:40}, //5
     "06":{min:10,max:50}, //6
     "07":{min:20,max:60}, //7
     "08":{min:30,max:70}, //8
@@ -33,6 +33,8 @@ module.exports = function(rawUserData, eep) {
     return {
         type: 'temperature',
         unit: '°C',
+        min: sensor.min,
+        max: sensor.max,
         value: Helper.conversion(temperature, sensor.min, sensor.max, 0, 255)
     }
 };

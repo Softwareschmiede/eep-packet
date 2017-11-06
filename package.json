@@ -1,6 +1,6 @@
 {
   "name": "eep-packet",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "Parses an EnOcean Serial Protocol 3 buffer to an EEP packet.",
   "main": "index.js",
   "scripts": {
@@ -22,5 +22,8 @@
   "bugs": {
     "url": "https://github.com/Softwareschmiede/eep-packet/issues"
   },
-  "homepage": "https://github.com/Softwareschmiede/eep-packet#readme"
+  "homepage": "https://github.com/Softwareschmiede/eep-packet#readme",
+  "dependencies": {
+    "esp3-packet": "0.0.5"
+  }
 }

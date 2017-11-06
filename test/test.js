@@ -1,14 +1,10 @@
 const EEPPacket = require('../index');
 
 describe('test', function() {
-    const buf = Buffer.from('55000707017ad508018302810002ffffffff3300d7', 'hex');
+    const buf = Buffer.from('55000a0701eba508282d800181383f0003ffffffff4400f6', 'hex');
 
     const eepPacket = new EEPPacket(buf);
     console.log(eepPacket);
-
-    // const buf2 = Buffer.from('55000a0701eba500007a080181383f0003ffffffff3d00e5', 'hex');
-    // const packet2 = eepPacket.parse(buf2);
-    // console.log(packet2);
 });
 
 
