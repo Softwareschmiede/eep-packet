@@ -1,9 +1,10 @@
 const EEPPacket = require('../index');
 
 describe('test', function() {
-    const buf = Buffer.from('55000a0701eba508282d800181383f0003ffffffff4400f6', 'hex');
+    const knownDevices = { '01830281': {rorg: 'd5', func: '00', type: '01'}, '0181383f': {rorg: 'a5', func: '02', type: '05'} };
+    const buf = Buffer.from('55000a0701eba500007a080181383f0003ffffffff3d00e5', 'hex');
 
-    const eepPacket = new EEPPacket(buf);
+    const eepPacket = new EEPPacket(buf, knownDevices);
     console.log(eepPacket);
 });
 

@@ -1,6 +1,6 @@
 {
   "name": "eep-packet",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Parses an EnOcean Serial Protocol 3 buffer to an EEP packet.",
   "main": "index.js",
   "scripts": {
