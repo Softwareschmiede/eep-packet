@@ -1,11 +1,34 @@
-const EEPPacket = require('../index');
+const ESP3Packet = require('esp3-packet');
+
+const EEPPacket = require('../');
 
 describe('test', function() {
     const knownDevices = { '01830281': {rorg: 'd5', func: '00', type: '01'}, '0181383f': {rorg: 'a5', func: '02', type: '05'} };
-    const buf = Buffer.from('55000a0701eba500007a080181383f0003ffffffff3d00e5', 'hex');
+    const knownDevicesArray = [
+        {
+            senderId: '01830281',
+            eep: {
+                rorg: 'd5',
+                func: '00',
+                type: '01'
+            }
+        },
+        {
+            senderId: '0181383f',
+            eep: {
+                rorg: 'a5',
+                func: '02',
+                type: '05'
+            }
+        }
+    ];
+    const buf = Buffer.from('55000707017ad500018302810002ffffffff2900be', 'hex');
 
-    const eepPacket = new EEPPacket(buf, knownDevices);
-    console.log(eepPacket);
+    const eepPacket = new EEPPacket(new ESP3Packet());
+    eepPacket.setKnownDevices(knownDevicesArray);
+    const packet = eepPacket.parse(buf);
+
+    console.log(packet);
 });
 
 

@@ -1,88 +1,133 @@
-const ESP3Packet = require('esp3-packet');
-
+/*
+ *  Private imports
+ */ 
 const Helper = require('./helper');
 const EEPs = require('./eep');
 
+/*
+ *  Declarations
+ */
+let _parser;
+let _knownDevices;
+
 class EEPPacket {
-    constructor(buffer, knownDevices) {
+    constructor(parser, devices) {
+        _parser = parser ? parser : null;
+
+        if (devices) {
+            try {
+                _knownDevices = buildKnownDevices(devices);
+            } catch (err) {
+                throw new TypeError(err.message);
+            }
+        } else {
+            _knownDevices = {};
+        }
+    }
+
+    setParser(parser) {
+        _parser = parser;
+    }
+
+    setKnownDevices(devices) {
+        try {
+            _knownDevices = buildKnownDevices(devices);
+        } catch (err) {
+            throw new TypeError(err.message);
+        }
+    }
+
+    addKnownDevice(device) {
+        if (device && device.senderId && device.eep) {
+            _knownDevices[device.senderId] = device.eep;
+        } else {
+            throw TypeError('Device is missing or invaild.')
+        }
+        
+    }
+
+    parse(buffer) {
         if (buffer === undefined || buffer === null) {
-            throw new Error('Buffer is missing.');
+            throw new TypeError('Buffer is missing.');
         }
 
-        if (knownDevices === undefined || knownDevices === null) {
-            // throw new Error('Known devices object is missing.');
-            knownDevices = {};
+        if (_parser === undefined || _parser === null) {
+            throw new TypeError('Parser is missing.');
         }
 
-        const espPacket = new ESP3Packet(buffer);
+        const packet = _parser.parse(buffer);
 
         // RPS
-        if (espPacket.data.rorg === 'f6') {
-            espPacket.data.userData = EEPs['f60203'](espPacket.data.rawUserData);
-            espPacket.learnMode = false;
-            delete espPacket.data.rawUserData;
+        if (packet.data.rorg === 'f6') {
+            packet.data.userData = EEPs['f60203'](packet.data.rawUserData);
+            packet.learnMode = false;
+            delete packet.data.rawUserData;
 
-            return espPacket;
+            return packet;
         }
 
         // 1BS
-        if (espPacket.data.rorg === 'd5') { // At this moment there is only one eep
-            const learnMode = espPacket.data.rawUserData.readUInt8() << 28 >>> 31; // Offset = 4, size = 1
+        if (packet.data.rorg === 'd5') { // At this moment there is only one eep
+            const learnMode = packet.data.rawUserData.readUInt8() << 28 >>> 31; // Offset = 4, size = 1
 
             if (learnMode === 0) { // it's a learn packet
-                //knownDevices[espPacket.data.senderId] = { rorg: espPacket.data.rorg, func: '00', type: '01' };
-                espPacket.learnMode = true;
-                espPacket.eep = { rorg: espPacket.data.rorg, func: '00', type: '01' };
-                delete espPacket.data.rawUserData;
+                packet.learnMode = true;
+                packet.eep = { rorg: packet.data.rorg, func: '00', type: '01' };
+                delete packet.data.rawUserData;
 
-                return espPacket;
+                return packet;
             } else {
-                if (knownDevices.hasOwnProperty(espPacket.data.senderId)) { // It's a known device, so parse it
-                    const eep = knownDevices[espPacket.data.senderId];
+                if (_knownDevices.hasOwnProperty(packet.data.senderId)) { // It's a known device, so parse it
+                    const eep = _knownDevices[packet.data.senderId];
 
-                    espPacket.data.userData = EEPs[eep.rorg + eep.func + eep.type](espPacket.data.rawUserData);
-                    espPacket.learnMode = false;
-                    delete espPacket.data.rawUserData;
+                    packet.data.userData = EEPs[eep.rorg + eep.func + eep.type](packet.data.rawUserData);
+                    packet.learnMode = false;
+                    delete packet.data.rawUserData;
 
-                    return espPacket;
-                }/* else { // Device isn't known, so cannot parse
-                    delete espPacket.data.rawUserData;
-                    return espPacket;
-                }*/
+                    return packet;
+                }
             }
         }
 
         // 4BS
-        if (espPacket.data.rorg === 'a5') {
-            const learnMode = espPacket.data.rawUserData.readUInt8(3) << 28 >>> 31;
+        if (packet.data.rorg === 'a5') {
+            const learnMode = packet.data.rawUserData.readUInt8(3) << 28 >>> 31;
 
             if (learnMode === 0) { // it's a learn packet
-                const func = Helper.pad(espPacket.data.rawUserData.readUInt8() >>> 2);
-                const type = Helper.pad(espPacket.data.rawUserData.readUInt16BE() << 22 >>> 25);
+                const func = Helper.pad(packet.data.rawUserData.readUInt8() >>> 2);
+                const type = Helper.pad(packet.data.rawUserData.readUInt16BE() << 22 >>> 25);
 
-                // knownDevices[espPacket.data.senderId] = { rorg: espPacket.data.rorg, func: func, type: type };
-                // fs.writeFileSync(kdfp, JSON.stringify(knownDevices));
-                espPacket.learnMode = true;
-                espPacket.eep = { rorg: espPacket.data.rorg, func: func, type: type };
-                delete espPacket.data.rawUserData;
+                packet.learnMode = true;
+                packet.eep = { rorg: packet.data.rorg, func: func, type: type };
+                delete packet.data.rawUserData;
 
-                return espPacket;
+                return packet;
             } else {
-                if (knownDevices.hasOwnProperty(espPacket.data.senderId)) { // It's a known device, so parse it
-                    const eep = knownDevices[espPacket.data.senderId];
+                if (_knownDevices.hasOwnProperty(packet.data.senderId)) { // It's a known device, so parse it
+                    const eep = _knownDevices[packet.data.senderId];
 
-                    espPacket.data.userData = EEPs[eep.rorg + eep.func](espPacket.data.rawUserData, eep);
-                    espPacket.learnMode = false;
-                    delete espPacket.data.rawUserData;
+                    packet.data.userData = EEPs[eep.rorg + eep.func](packet.data.rawUserData, eep);
+                    packet.learnMode = false;
+                    delete packet.data.rawUserData;
 
-                    return espPacket;
-                }/* else { // Device isn't known, so cannot parse
-                    delete espPacket.data.rawUserData;
-
-                    return espPacket;
-                }*/
+                    return packet;
+                }
             }
         }
+    }
+}
+
+function buildKnownDevices(devices) {
+    if (devices) {
+        for (let i = 0; i < devices.length; i++) {
+            if (devices[i].senderId && devices[i].eep) {
+                _knownDevices[devices[i].senderId] = devices[i].eep;
+            } else {
+                throw TypeError('Device is invaild. "senderId" or "eep" is missing.');
+            }
+        }
+    } else {
+        throw TypeError('Devices are missing.');
     }
 }
 

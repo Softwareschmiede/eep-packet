@@ -5,32 +5,52 @@ This module extracts all information out of an esp3 buffer.
 ```javascript
 const EEPPacket = require('eep-packet');
 ...
-const packet = new EEPPacket(buffer, knownDevices);
+const eepPacket = new EEPPacket();
+eepPacket.setParser(parser);
+
+const packet = eepPacket.parse(buffer);
 ```
 
-## Known Devices
-You have to set an object with all known devices.
-For the first time you have to set an empty object ( {} ).
-Otherwise the object has to look like this:
+## Constructor
+```javascript
+new EEPPacket(parser);
+new EEPPacket(knownDevices);
+new EEPPacket(parser, knownDevices);
+```
 
+## Methods
+### setParser(parser)
+* `parser` A parser that can parses esp3 buffer like [esp3-packet](https://github.com/Softwareschmiede/esp3-packet)
+
+### addKnownDevice(device)
+* `device` An object that has a `senderId` key and an `eep` key
+
+Throws a `TypeError` if the device is missing or invaild.
+
+**Device example:**
 ```javascript
 {
-    00000000: { rorg: 'a5', func: '02', type: '05' },
-    11111111: { rorg: 'd5', func: '00', type: '01' },
-    ...
+    senderId: '00000000',
+    eep: {
+        rorg: 'd5',
+        func: '00',
+        type: '01'
+    }
 }
 ```
-The key is the id of a known device.
-The value is the eep (EnOcean Equipment Profile) of a known device.
 
-## Packet structure
+### setKnownDevices(devices)
+* `devices` An array of devices, see [Device example](#addKnownDevice(device))
+
+Throws a `TypeError` if the devices are not set or have an invaild format.
+
+### parse(buffer)
+* `buffer` A vaild buffer like [esp3-packet](https://github.com/Softwareschmiede/esp3-packet) returns.
+
+Throws a `TypeError` if the `buffer` or the `parser` is missing.
+**Returns:**
 ```javascript
 {
-    header: {
-        dataLength: Number,
-        optionalLength: Number,
-        packetType: String
-    },
     data: {
         rorg: String,
         senderId: String,
