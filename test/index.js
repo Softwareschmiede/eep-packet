@@ -22,7 +22,7 @@ describe('test', function() {
             }
         }
     ];
-    const buf = Buffer.from('55000707017ad500018302810002ffffffff2900be', 'hex');
+    const buf = Buffer.from('55000a0701eba500007a080181383f0003ffffffff3d00e5', 'hex');
 
     const eepPacket = new EEPPacket(new ESP3Packet());
     eepPacket.setKnownDevices(knownDevicesArray);

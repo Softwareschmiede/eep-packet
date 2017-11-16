@@ -14,7 +14,7 @@ const packet = eepPacket.parse(buffer);
 ## Constructor
 ```javascript
 new EEPPacket(parser);
-new EEPPacket(knownDevices);
+new EEPPacket(null, knownDevices);
 new EEPPacket(parser, knownDevices);
 ```
 

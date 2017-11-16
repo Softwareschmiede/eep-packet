@@ -118,14 +118,18 @@ class EEPPacket {
 }
 
 function buildKnownDevices(devices) {
+    const knownDevices = {};
+
     if (devices) {
         for (let i = 0; i < devices.length; i++) {
             if (devices[i].senderId && devices[i].eep) {
-                _knownDevices[devices[i].senderId] = devices[i].eep;
+                knownDevices[devices[i].senderId] = devices[i].eep;
             } else {
                 throw TypeError('Device is invaild. "senderId" or "eep" is missing.');
             }
         }
+
+        return knownDevices;
     } else {
         throw TypeError('Devices are missing.');
     }
